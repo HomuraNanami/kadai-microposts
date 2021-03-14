@@ -27,6 +27,14 @@ Route::group(['middleware' => ['auth']], function () {
 });
 
 Route::group(['middleware' => ['auth']], function () {
-    // 中略
+    Route::group(['prefix' => 'users/{id}'], function () {
+        Route::post('follow', 'UserFollowController@store')->name('user.follow');
+        Route::delete('unfollow', 'UserFollowController@destroy')->name('user.unfollow');
+        Route::get('followings', 'UsersController@followings')->name('users.followings');
+        Route::get('followers', 'UsersController@followers')->name('users.followers');
+    });
+
+    Route::resource('users', 'UsersController', ['only' => ['index', 'show']]);
+
     Route::resource('microposts', 'MicropostsController', ['only' => ['store', 'destroy']]);
 });
