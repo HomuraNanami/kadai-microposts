@@ -50,7 +50,7 @@ class User extends Authenticatable
      */
     public function loadRelationshipCounts()
     {
-        $this->loadCount(['microposts', 'followings', 'followers']);
+        $this->loadCount(['microposts', 'followings', 'followers', 'favorites']);
     }
 
     /**
@@ -68,6 +68,15 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class, 'user_follow', 'follow_id', 'user_id')->withTimestamps();
     }
+
+    /**
+     * このユーザがお気に入りの投稿
+     */
+    public function favorites()
+    {
+        return $this->belongsToMany(Micropost::class, 'favorites', 'user_id', 'micropost_id')->withTimestamps();
+    }
+
 
     /**
      * $userIdで指定されたユーザをフォローする。
@@ -138,6 +147,55 @@ class User extends Authenticatable
         $userIds[] = $this->id;
         // それらのユーザが所有する投稿に絞り込む
         return Micropost::whereIn('user_id', $userIds);
+    }
+
+    /**
+     * $micropostIdで指定された投稿をお気に入りにする。
+     *
+     * @param  int  $micropostId
+     * @return bool
+     */
+    public function favorite($micropostId)
+    {
+        // すでにお気に入りか確認
+        if ($this->is_favorite($micropostId)) {
+            // すでにお気に入りであれば何もしない
+            return false;
+        } else {
+            // お気に入りに追加する
+            $this->favorites()->attach($micropostId);
+            return true;
+        }
+    }
+
+    /**
+     * $micropostIdで指定された投稿をお気に入りから削除する。
+     *
+     * @param  int  $micropostId
+     * @return bool
+     */
+    public function unfavorite($micropostId)
+    {
+        // すでにお気に入りか確認
+        if ($this->is_favorite($micropostId)) {
+            // すでにお気に入りであれば、削除する
+            $this->favorites()->detach($micropostId);
+            return true;
+        } else {
+            // お気に入りでなければ何もしない
+            return false;
+        }
+    }
+
+    /**
+     * 指定された $micropostIdの投稿をこのユーザがお気に入り中であるか調べる。お気に入り中ならtrueを返す。
+     *
+     * @param  int  $micropostId
+     * @return bool
+     */
+    public function is_favorite($micropostId)
+    {
+        return $this->favorites()->where('micropost_id', $micropostId)->exists();
     }
     
 }
